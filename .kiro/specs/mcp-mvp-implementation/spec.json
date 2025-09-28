@@ -1,0 +1,22 @@
+{
+  "feature_name": "mcp-mvp-implementation",
+  "created_at": "2025-09-28T00:00:00Z",
+  "updated_at": "2025-09-28T14:11:00Z",
+  "language": "ja",
+  "phase": "tasks-generated",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": false
+    }
+  },
+  "ready_for_implementation": false
+}

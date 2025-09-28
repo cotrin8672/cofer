@@ -2,9 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project: Coherra - High-Performance Container Environment Manager
+## Project: Cofer (コフェル) - High-Performance Container Environment Manager
 
-Coherraは、既存のcontainer-use実装をRustで置き換える高性能コンテナ環境管理ツールです。Podmanとbind-mountを活用し、ゼロコピー化による大幅な性能改善を実現します。
+Cofer（coherent + interference）は、既存のcontainer-use実装をRustで置き換える高性能コンテナ環境管理ツールです。Podmanとbind-mountを活用し、ゼロコピー化による大幅な性能改善を実現します。
 
 ### Core Architecture
 - **Bind-mount戦略**: Export/Importを撤廃し、worktreeを直接`/workdir`にマウント（ゼロコピー）
@@ -95,6 +95,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 #### Active Specifications
 - Check `.kiro/specs/` for active specifications
 - Use `/kiro:spec-status [feature-name]` to check progress
+- **mcp-mvp-implementation**: MCPサーバーとして最低限の環境操作（create_environment/run_command）を提供するMVP実装
 
 ### Development Guidelines
 - Think in English, but generate responses in Japanese (思考は英語、回答の生成は日本語で行うように)
