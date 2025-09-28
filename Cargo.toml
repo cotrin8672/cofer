@@ -8,6 +8,7 @@ anyhow = "1.0.100"
 async-trait = "0.1.89"
 bollard = "0.19.2"
 bytes = "1.10.1"
+chrono = { version = "0.4.42", features = ["serde"] }
 futures = "0.3.31"
 git2 = "0.20.2"
 gix = { version = "0.73.0", features = ["worktree-mutation"] }

@@ -1,11 +1,13 @@
 use async_trait::async_trait;
 use serde_json::{json, Value};
+use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::info;
 
 use super::server::ServerState;
 use super::types::{McpError, McpRequest};
+use crate::environment::{EnvironmentHandle, EnvironmentStatus};
 
 /// Trait for handling MCP methods
 #[async_trait]
@@ -67,39 +69,56 @@ impl Handler for CreateEnvironmentHandler {
             .and_then(|v| v.as_str())
             .ok_or_else(|| McpError::invalid_params("Missing or invalid image"))?;
 
-        // Check if environment already exists
-        {
-            let state_guard = state.read().await;
-            if state_guard.environments.contains_key(env_id) {
-                return Err(McpError::invalid_request(
-                    format!("Environment '{}' already exists", env_id)
-                ));
-            }
+        // Parse optional environment variables
+        let env_vars = params.get("env_vars")
+            .and_then(|v| v.as_object())
+            .map(|obj| {
+                obj.iter()
+                    .filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string())))
+                    .collect()
+            })
+            .unwrap_or_else(std::collections::HashMap::new);
+
+        // Create environment handle
+        let mut handle = EnvironmentHandle::new(
+            env_id,
+            format!("mock-container-{}", env_id), // TODO: Get real container ID from Podman
+            PathBuf::from(project_root),
+            image,
+        );
+
+        // Add environment variables
+        if !env_vars.is_empty() {
+            handle.add_env_vars(env_vars);
         }
+
+        // Register in the registry
+        // Clone the registry to avoid holding the lock across await
+        let registry = {
+            let state_guard = state.read().await;
+            state_guard.registry.clone()
+        };
+
+        registry.register(handle.clone()).await
+            .map_err(|e| McpError::invalid_request(e.to_string()))?;
 
         // TODO: Actually create the container with Podman
-        // For now, just store in state and return a mock response
+        // For now, update status to running
+        handle.set_status(EnvironmentStatus::Running);
 
-        {
-            let mut state_guard = state.write().await;
-            state_guard.environments.insert(
-                env_id.to_string(),
-                json!({
-                    "container_id": format!("mock-container-{}", env_id),
-                    "project_root": project_root,
-                    "mount_path": "/workdir",
-                    "image": image,
-                    "status": "running"
-                })
-            );
-        }
+        // Update the handle in registry
+        registry.update(handle.clone()).await
+            .map_err(|e| McpError::internal_error(e.to_string()))?;
 
-        Ok(json!({
-            "env_id": env_id,
-            "container_id": format!("mock-container-{}", env_id),
-            "project_root": project_root,
-            "mount_path": "/workdir",
-            "status": "created"
+        // Return the environment details
+        Ok(serde_json::to_value(&handle).unwrap_or_else(|_| {
+            json!({
+                "env_id": env_id,
+                "container_id": handle.container_id,
+                "project_root": handle.project_root.to_string_lossy(),
+                "mount_path": handle.mount_path,
+                "status": "running"
+            })
         }))
     }
 }
@@ -128,14 +147,22 @@ impl Handler for RunCommandHandler {
             .and_then(|v| v.as_u64())
             .unwrap_or(120000); // Default 2 minutes
 
-        // Check if environment exists
-        {
+        // Check if environment exists and is running
+        // Clone the registry to avoid holding the lock across await
+        let registry = {
             let state_guard = state.read().await;
-            if !state_guard.environments.contains_key(env_id) {
-                return Err(McpError::invalid_params(
-                    format!("Environment '{}' not found", env_id)
-                ));
-            }
+            state_guard.registry.clone()
+        };
+
+        let handle = registry.get(env_id).await
+            .map_err(|_| McpError::invalid_params(
+                format!("Environment '{}' not found", env_id)
+            ))?;
+
+        if !handle.is_running() {
+            return Err(McpError::invalid_params(
+                format!("Environment '{}' is not running (status: {:?})", env_id, handle.status)
+            ));
         }
 
         // TODO: Actually execute the command with Podman
@@ -242,8 +269,13 @@ mod tests {
         assert_eq!(result["mount_path"], "/workdir");
 
         // Verify environment was stored
-        let state_guard = state.read().await;
-        assert!(state_guard.environments.contains_key("test-env"));
+        let registry = {
+            let state_guard = state.read().await;
+            state_guard.registry.clone()
+        };
+        let stored = registry.get("test-env").await;
+        assert!(stored.is_ok());
+        assert_eq!(stored.unwrap().env_id, "test-env");
     }
 
     #[tokio::test]

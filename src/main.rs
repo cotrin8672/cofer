@@ -3,6 +3,7 @@ use tokio::signal;
 use tokio::sync::watch;
 use tracing::{error, info};
 
+mod environment;
 mod mcp;
 mod service;
 

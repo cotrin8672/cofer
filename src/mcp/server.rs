@@ -1,5 +1,4 @@
 use anyhow::Result;
-use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
@@ -8,6 +7,7 @@ use tracing::{debug, error, info, warn};
 
 use super::handlers;
 use super::types::{McpError, McpRequest, McpResponse};
+use crate::environment::EnvironmentRegistry;
 
 /// MCP server that handles JSON-RPC requests over stdio
 pub struct McpServer {
@@ -18,10 +18,18 @@ pub struct McpServer {
 }
 
 /// Server state that can be shared across handlers
-#[derive(Debug, Default)]
+#[derive(Clone)]
 pub struct ServerState {
-    /// Environment registry will be added here
-    pub environments: HashMap<String, Value>,
+    /// Environment registry for managing container environments
+    pub registry: EnvironmentRegistry,
+}
+
+impl Default for ServerState {
+    fn default() -> Self {
+        Self {
+            registry: EnvironmentRegistry::new(),
+        }
+    }
 }
 
 impl McpServer {
@@ -222,10 +230,20 @@ impl McpServer {
         info!("Shutting down MCP server");
 
         // Clean up environments
-        let state = self.state.write().await;
-        if !state.environments.is_empty() {
-            warn!("Cleaning up {} active environments", state.environments.len());
-            // TODO: Implement actual cleanup
+        // Clone the registry to avoid holding the lock across await
+        let registry = {
+            let state = self.state.read().await;
+            state.registry.clone()
+        };
+
+        let environments = registry.clear().await;
+
+        if !environments.is_empty() {
+            warn!("Cleaning up {} active environments", environments.len());
+            // TODO: Actually stop/remove containers via Podman
+            for env in environments {
+                debug!("Cleanup required for environment: {}", env.env_id);
+            }
         }
 
         Ok(())
