@@ -1,0 +1,29 @@
+# Clippy configuration
+# https://github.com/rust-lang/rust-clippy
+
+msrv = "1.75"
+
+# Maximum allowed cyclomatic complexity
+cognitive-complexity-threshold = 30
+
+# Maximum allowed number of lines in a function
+too-many-lines-threshold = 100
+
+# Maximum allowed number of arguments to a function
+too-many-arguments-threshold = 7
+
+# Disallow certain macros
+disallowed-macros = [
+    # Use tracing instead of println for logging
+    { path = "std::println", reason = "use tracing for logging" },
+    { path = "std::print", reason = "use tracing for logging" },
+    { path = "std::eprintln", reason = "use tracing for logging" },
+    { path = "std::eprint", reason = "use tracing for logging" },
+    { path = "std::dbg", reason = "use tracing for logging" },
+]
+
+# Type complexity threshold
+type-complexity-threshold = 250
+
+# Maximum allowed single literal string length
+single-char-binding-names-threshold = 4

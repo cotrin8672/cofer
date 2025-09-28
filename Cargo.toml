@@ -1,0 +1,33 @@
+[package]
+name = "coherra"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.100"
+async-trait = "0.1.89"
+bollard = "0.19.2"
+bytes = "1.10.1"
+futures = "0.3.31"
+git2 = "0.20.2"
+gix = { version = "0.73.0", features = ["worktree-mutation"] }
+notify = "8.2.0"
+rust-mcp-sdk = { version = "0.7.0", default-features = false, features = ["server", "macros", "stdio"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+tokio = { version = "1.47.1", features = ["full"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+
+[dev-dependencies]
+cargo-husky = "1.5.0"
+criterion = { version = "0.7.0", features = ["html_reports"] }
+insta = { version = "1.43.2", features = ["json"] }
+mockall = "0.13.1"
+pretty_assertions = "1.4.1"
+rstest = "0.26.1"
+serial_test = "3.2.0"
+tempfile = "3.23.0"
+test-case = "3.3.1"
+tokio-test = "0.4.4"
+wiremock = "0.6.5"

@@ -1,0 +1,26 @@
+#!/bin/sh
+set -e
+
+echo "🚀 Running pre-push checks..."
+
+# Run full test suite before push
+echo "🧪 Running full test suite..."
+if command -v cargo-nextest &> /dev/null; then
+    cargo nextest run
+else
+    cargo test
+fi
+if [ $? -ne 0 ]; then
+    echo "❌ Tests failed. Push aborted."
+    exit 1
+fi
+
+# Check documentation
+echo "📚 Checking documentation..."
+cargo doc --no-deps --quiet
+if [ $? -ne 0 ]; then
+    echo "❌ Documentation build failed. Push aborted."
+    exit 1
+fi
+
+echo "✅ All pre-push checks passed! Pushing..."

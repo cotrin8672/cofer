@@ -1,0 +1,44 @@
+# Nextest configuration
+# https://nexte.st/book/configuration
+
+[profile.default]
+# Automatically detect the number of threads to use
+test-threads = "auto"
+
+# Retry failed tests
+retries = { backoff = "exponential", count = 2, delay = "1s" }
+
+# Test output settings
+success-output = "immediate"
+failure-output = "immediate-final"
+status-level = "pass"
+
+# Slow test detection
+slow-timeout = { period = "60s", terminate-after = 2 }
+
+[profile.ci]
+# CI-specific settings
+test-threads = 4
+retries = { backoff = "exponential", count = 3, delay = "1s" }
+
+# More verbose output for CI
+success-output = "immediate"
+failure-output = "immediate-final"
+status-level = "retry"
+
+# Fail fast in CI
+fail-fast = true
+
+[profile.quick]
+# Quick testing during development
+test-threads = "auto"
+retries = 0
+fail-fast = true
+success-output = "never"
+failure-output = "immediate"
+
+[test-groups]
+# Define test groups for selective testing
+unit = { max-threads = 8 }
+integration = { max-threads = 4 }
+serial = { max-threads = 1 }
