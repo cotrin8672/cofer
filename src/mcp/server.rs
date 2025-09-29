@@ -43,10 +43,18 @@ impl McpServer {
         handlers.insert("run_command".to_string(), Box::new(handlers::RunCommandHandler));
 
         // Register unimplemented handlers
-        handlers.insert("watch-commit".to_string(), Box::new(handlers::UnimplementedHandler));
-        handlers.insert("note-append".to_string(), Box::new(handlers::UnimplementedHandler));
-        handlers.insert("up".to_string(), Box::new(handlers::UnimplementedHandler));
-        handlers.insert("down".to_string(), Box::new(handlers::UnimplementedHandler));
+        handlers.insert("watch-commit".to_string(), Box::new(handlers::UnimplementedHandler {
+            method: "watch-commit".to_string(),
+        }));
+        handlers.insert("note-append".to_string(), Box::new(handlers::UnimplementedHandler {
+            method: "note-append".to_string(),
+        }));
+        handlers.insert("up".to_string(), Box::new(handlers::UnimplementedHandler {
+            method: "up".to_string(),
+        }));
+        handlers.insert("down".to_string(), Box::new(handlers::UnimplementedHandler {
+            method: "down".to_string(),
+        }));
 
         Self {
             handlers,
@@ -171,7 +179,7 @@ impl McpServer {
     }
 
     /// Handle a single JSON-RPC request
-    async fn handle_request(&self, input: &str) -> McpResponse {
+    pub async fn handle_request(&self, input: &str) -> McpResponse {
         // Parse the JSON
         let request = match serde_json::from_str::<McpRequest>(input) {
             Ok(req) => req,
@@ -319,7 +327,7 @@ mod tests {
 
         let error = response.error.unwrap();
         assert_eq!(error.code, -32601); // Unimplemented methods return MethodNotFound
-        assert!(error.message.to_lowercase().contains("unimplemented"));
+        assert!(error.message.to_lowercase().contains("not implemented"));
     }
 
     #[tokio::test]

@@ -170,7 +170,7 @@ fn test_unimplemented_method_returns_unimplemented_error() {
 
     let error = &response["error"];
     assert_eq!(error["code"], -32601); // MethodNotFound or custom Unimplemented
-    assert!(error["message"].as_str().unwrap().to_lowercase().contains("unimplemented"));
+    assert!(error["message"].as_str().unwrap().to_lowercase().contains("not implemented"));
 }
 
 #[test]

@@ -221,7 +221,7 @@ impl PodmanClient {
     ) -> Result<(String, String)> {
         debug!("Getting logs for container: {}", container_id);
 
-        let options = LogsOptions {
+        let options = LogsOptions::<String> {
             stdout: true,
             stderr: true,
             tail: tail.unwrap_or_else(|| "all".to_string()),

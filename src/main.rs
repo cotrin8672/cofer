@@ -5,6 +5,7 @@ use tracing::{error, info};
 
 mod environment;
 mod mcp;
+mod podman;
 mod service;
 
 #[tokio::main]
