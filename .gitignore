@@ -30,3 +30,4 @@ Thumbs.db
 # MCP/Container runtime
 /worktrees/
 /repos/
+.cofer/
