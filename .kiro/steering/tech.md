@@ -10,57 +10,94 @@
 ## Core Dependencies
 
 ### MCP Server Framework
-- **rust-mcp-sdk** v0.2.0
-  - stdio transport for local execution
+- **rmcp** v0.7.0 (Official Rust MCP SDK)
+  - Server implementation support
   - JSON-RPC message handling
-  - Macro-based boilerplate reduction
+  - Improved API design
   ```toml
-  rust-mcp-sdk = { version = "0.2.0", default-features = false, features = ["server", "macros", "stdio"] }
+  rmcp = { version = "0.7.0", features = ["server"] }
   ```
 
 ### Container Management
-- **bollard** v0.17
+- **bollard** v0.19.2
   - Async Docker/Podman API client
   - Type-safe container operations
+  - Enhanced Windows support
   ```toml
-  bollard = "0.17"
+  bollard = "0.19.2"
   ```
 
 ### Git Operations
-- **gix** v0.64 (gitoxide)
+- **gix** v0.73.0 (gitoxide)
   - High-performance diff processing
   - Index and commit operations
+  - Improved worktree support
   ```toml
-  gix = { version = "0.64", features = ["worktree-mutation"] }
+  gix = { version = "0.73.0", features = ["worktree-mutation"] }
   ```
-- **git2** v0.19 (libgit2)
+- **git2** v0.20.2 (libgit2)
   - Complete Git API (notes, submodules)
+  - Worktree creation and management (actively used)
   ```toml
-  git2 = "0.19"
+  git2 = "0.20.2"
   ```
 
 ### Async Runtime
-- **tokio** v1.41
+- **tokio** v1.47.1
   - Full async/await support
   - Timer and I/O primitives
+  - Enhanced performance
   ```toml
-  tokio = { version = "1.41", features = ["full"] }
+  tokio = { version = "1.47.1", features = ["full"] }
   ```
 
 ### File System Monitoring
-- **notify** v7.0
+- **notify** v8.2.0
   - Cross-platform FS events
   - Built-in debouncing (100-200ms)
+  - Improved Windows support
   ```toml
-  notify = "7.0"
+  notify = "8.2.0"
   ```
 
 ### Error Handling
-- **anyhow** v1.0
+- **anyhow** v1.0.100
   - Simplified error propagation
+  - Context-aware error messages
   ```toml
-  anyhow = "1.0"
+  anyhow = "1.0.100"
   ```
+
+### CLI and User Interface
+- **clap** v4.5.8
+  - Command-line argument parsing
+  - Derive-based API
+  - Subcommand support
+  ```toml
+  clap = { version = "4.5.8", features = ["derive"] }
+  ```
+
+### Logging and Diagnostics
+- **tracing** v0.1.41
+  - Structured, async-aware logging
+  - Performance diagnostics
+  ```toml
+  tracing = "0.1.41"
+  ```
+- **tracing-subscriber** v0.3.20
+  - Log formatting and filtering
+  - Environment-based configuration
+  ```toml
+  tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+  ```
+
+### Additional Runtime Dependencies
+- **async-trait** v0.1.89 - Async trait support
+- **bytes** v1.10.1 - Efficient byte operations
+- **futures** v0.3.31 - Stream and future utilities
+- **serde** v1.0.228 - Serialization framework
+- **serde_json** v1.0.145 - JSON processing
+- **dirs** v5.0 - Platform-specific directories
 
 ## Development Environment
 
@@ -133,9 +170,21 @@ cargo run               # Start MCP server (stdio mode)
 - **Memory cap**: Ring buffer limited (64KB or 512 lines for logs)
 - **Debounce timing**: 100-200ms for FS events
 
+## Testing Dependencies (Development)
+Comprehensive testing infrastructure for quality assurance:
+- **criterion** v0.7.0 - Benchmarking framework
+- **insta** v1.43.2 - Snapshot testing with JSON support
+- **mockall** v0.13.1 - Mock object generation
+- **pretty_assertions** v1.4.1 - Enhanced assertion diffs
+- **rstest** v0.26.1 - Fixture-based testing
+- **serial_test** v3.2.0 - Serial test execution
+- **tempfile** v3.23.0 - Temporary file handling
+- **test-case** v3.3.1 - Parameterized testing
+- **tokio-test** v0.4.4 - Async test utilities
+- **wiremock** v0.6.5 - HTTP mocking
+- **cargo-husky** v1.5.0 - Git hooks integration
+
 ## Future Considerations
-- **bytes** v1.8: Efficient byte operations
-- **futures** v0.3: Stream processing
-- **ringbuf** v0.4: Ring buffer implementation
-- **serde/serde_json**: Additional JSON processing
+- **ringbuf** v0.4: Ring buffer implementation for log management
 - **Windows-specific crates**: Job Object and long path support
+- **Container runtime alternatives**: Investigation of native container APIs

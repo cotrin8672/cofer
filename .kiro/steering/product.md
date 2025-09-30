@@ -38,4 +38,9 @@ Coherra is a high-performance container environment management tool that replace
 - **Native library usage** (gix/git2) instead of CLI spawning
 
 ## Development Status
-Currently in initial development phase with MCP server foundation being implemented. The project aims to provide a production-ready replacement for container-use implementations with significant performance and reliability improvements.
+Currently in initial development phase with CLI foundation and worktree management implemented. Recent milestones include:
+- **Worktree creation**: Git worktree management for isolated environments (completed)
+- **CLI interface**: Command-line interface using clap for user interactions
+- **MCP server migration**: Switched to rmcp (official Rust MCP SDK) v0.7.0
+
+The project aims to provide a production-ready replacement for container-use implementations with significant performance and reliability improvements.
