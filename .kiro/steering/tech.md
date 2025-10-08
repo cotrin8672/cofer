@@ -1,190 +1,82 @@
 # Technology Stack
 
 ## Architecture
-- **Language**: Rust (Edition 2024)
-- **Runtime**: Asynchronous with tokio
-- **Protocol**: Model Context Protocol (MCP) over stdio
-- **Container**: Podman (Docker-compatible, rootless)
-- **Version Control**: Native git libraries (gix + git2)
+- **言語**: Rust (Edition 2024) を採用し、将来的な async/zero-copy パイプラインを全面的にサポート。
+- **実行モデル**: `tokio` による非同期ランタイムで CLI から将来のサーバ機能まで統一。
+- **Git 連携**: `gix` と `git2` を併用し、高速差分処理と完全なリポジトリ操作 API を内製化。
+- **コンテナ制御 (計画)**: Podman を想定し、Docker 互換 API (`bollard`) で管理。
+- **プロトコル (計画)**: Model Context Protocol (MCP) を `rmcp` で提供し、AI エージェント経由の操作を標準化。
 
-## Core Dependencies
+## ランタイム & アプリケーション層
+- **clap v4.5.8**: CLI インターフェース。現在は `cofer init` サブコマンドのみを提供。
+- **tokio v1.47.1**: `#[tokio::main]` による非同期エントリーポイント。
+- **tracing v0.1.41 / tracing-subscriber v0.3.20**: 構造化ログと環境変数ベースのフィルタリング。
+- **anyhow v1.0.100**: コンテキスト付きエラーハンドリングを簡潔に保持。
 
-### MCP Server Framework
-- **rmcp** v0.7.0 (Official Rust MCP SDK)
-  - Server implementation support
-  - JSON-RPC message handling
-  - Improved API design
-  ```toml
-  rmcp = { version = "0.7.0", features = ["server"] }
-  ```
+## Git Operations
+- **gix v0.73.0**: 差分計算・インデックス操作・ワークツリー操作を高速化 (機能統合中)。
+- **git2 v0.20.2**: ブランチ作成、ワークツリー生成、notes 等フル機能 API を提供。
 
-### Container Management
-- **bollard** v0.19.2
-  - Async Docker/Podman API client
-  - Type-safe container operations
-  - Enhanced Windows support
-  ```toml
-  bollard = "0.19.2"
-  ```
+## コンテナ & MCP (実装予定)
+- **bollard v0.19.2**: Podman/Docker API クライアント。コンテナ起動とポート公開の一括設定に利用予定。
+- **rmcp v0.7.0 (server feature)**: MCP サーバ実装。AI アシスタントとの統合地点として今後実装を進める。
 
-### Git Operations
-- **gix** v0.73.0 (gitoxide)
-  - High-performance diff processing
-  - Index and commit operations
-  - Improved worktree support
-  ```toml
-  gix = { version = "0.73.0", features = ["worktree-mutation"] }
-  ```
-- **git2** v0.20.2 (libgit2)
-  - Complete Git API (notes, submodules)
-  - Worktree creation and management (actively used)
-  ```toml
-  git2 = "0.20.2"
-  ```
+## 非同期・ユーティリティ
+- **async-trait v0.1.89**: 非同期トレイト実装用。
+- **futures v0.3.31 / bytes v1.10.1**: Stream/Future ユーティリティと効率的なバッファ操作。
+- **dirs v5.0**: プロジェクト固有の設定ディレクトリ解決 (初期化時に活用予定)。
 
-### Async Runtime
-- **tokio** v1.47.1
-  - Full async/await support
-  - Timer and I/O primitives
-  - Enhanced performance
-  ```toml
-  tokio = { version = "1.47.1", features = ["full"] }
-  ```
+## ファイルシステム監視 (計画)
+- **notify v8.2.0**: クロスプラットフォーム FS イベント。150ms 前後のデバウンスで自動コミットフローを支える予定。
 
-### File System Monitoring
-- **notify** v8.2.0
-  - Cross-platform FS events
-  - Built-in debouncing (100-200ms)
-  - Improved Windows support
-  ```toml
-  notify = "8.2.0"
-  ```
+## シリアライゼーション
+- **serde v1.0.228 (+derive)** / **serde_json v1.0.145**: JSON ベースの CLI/MCP ペイロード処理基盤。
 
-### Error Handling
-- **anyhow** v1.0.100
-  - Simplified error propagation
-  - Context-aware error messages
-  ```toml
-  anyhow = "1.0.100"
-  ```
+## 開発環境
+### システム要件
+- Rust 1.75+ (Edition 2024 対応)。
+- Podman 4.0+ または Docker 20.10+ (コンテナ統合フェーズで必須)。
+- Git 2.30+ (外部 CLI を最小限補助で使用する場合のみ)。
 
-### CLI and User Interface
-- **clap** v4.5.8
-  - Command-line argument parsing
-  - Derive-based API
-  - Subcommand support
-  ```toml
-  clap = { version = "4.5.8", features = ["derive"] }
-  ```
-
-### Logging and Diagnostics
-- **tracing** v0.1.41
-  - Structured, async-aware logging
-  - Performance diagnostics
-  ```toml
-  tracing = "0.1.41"
-  ```
-- **tracing-subscriber** v0.3.20
-  - Log formatting and filtering
-  - Environment-based configuration
-  ```toml
-  tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
-  ```
-
-### Additional Runtime Dependencies
-- **async-trait** v0.1.89 - Async trait support
-- **bytes** v1.10.1 - Efficient byte operations
-- **futures** v0.3.31 - Stream and future utilities
-- **serde** v1.0.228 - Serialization framework
-- **serde_json** v1.0.145 - JSON processing
-- **dirs** v5.0 - Platform-specific directories
-
-## Development Environment
-
-### System Requirements
-- **Rust**: 1.75+ (Edition 2024 support)
-- **Podman**: 4.0+ or Docker 20.10+
-- **Git**: 2.30+ (for external git operations if needed)
-
-### Platform-Specific
-#### Windows
-- Podman service: `podman system service --time=0`
-- Force CRLF handling: `core.autocrlf=false`
-- Job Objects for process management
-- Long path support (`\\?\` prefix)
-
-#### Linux/macOS
-- SELinux: Use `:Z` option for bind mounts
-- Rootless containers recommended
+### ツールチェーン設定
+- `rust-toolchain.toml`: `stable` に固定し、`rustfmt`/`clippy` コンポーネントを同梱。
+- `.rustfmt.toml`: インポートのグルーピングやコメント整形を定義 (`newline_style = "Unix"` で統一)。
+- `clippy.toml`: `msrv = 1.75`、複雑度や関数長の上限、標準出力系マクロの禁止を明文化。
 
 ## Common Commands
-
-### Build
 ```bash
-cargo build              # Debug build
-cargo build --release    # Release build for performance testing
-```
-
-### Test
-```bash
-cargo test              # Run all tests
-cargo test -- --nocapture  # With output visibility
-cargo test --release    # Performance tests
-```
-
-### Quality Checks
-```bash
-cargo fmt               # Format code
-cargo clippy -- -D warnings  # Lint with warnings as errors
-cargo doc --open        # Generate and view documentation
-```
-
-### MCP Server Operations
-```bash
-cargo run               # Start MCP server (stdio mode)
+cargo build              # デバッグビルド
+cargo build --release    # パフォーマンス計測向けリリースビルド
+cargo test               # テスト実行 (現時点でテストスイートは未整備)
+cargo fmt                # Rustfmt
+cargo clippy -- -D warnings  # Lint を Warning=Error で実行
+cargo doc --open         # ドキュメント生成
 ```
 
 ## Environment Variables
-
-### Podman Configuration
-- `PODMAN_SOCKET`: Custom Podman socket path (optional)
-- `CONTAINER_HOST`: Alternative to DOCKER_HOST for Podman
-
-### Development
-- `RUST_LOG`: Logging level (debug, info, warn, error)
-- `RUST_BACKTRACE`: Enable backtrace (1 or full)
-
-### Runtime
-- `COHERRA_TIMEOUT_RUN`: Override default run timeout (ms)
-- `COHERRA_TIMEOUT_GIT`: Override git operation timeout (ms)
-- `COHERRA_TIMEOUT_STARTUP`: Override startup timeout (ms)
+- `PODMAN_SOCKET` / `CONTAINER_HOST`: Podman デーモンのソケット上書き (統合作業時に使用)。
+- `RUST_LOG`: `tracing` レベル制御 (`info` デフォルト想定)。
+- `RUST_BACKTRACE`: バックトレースの有効化。
+- `COHERRA_TIMEOUT_RUN` / `COHERRA_TIMEOUT_GIT` / `COHERRA_TIMEOUT_STARTUP`: 既定タイムアウトの上書き (ms 単位)。
 
 ## Port Configuration
-- **MCP Server**: stdio (no network port)
-- **Container ports**: Dynamically mapped as requested
-- **Development ports**: User-configurable (3000, 9229, etc.)
+- 現状は stdio ベースの CLI のみでポート未使用。
+- コンテナ公開時は要求ポートを一括で Podman に割り当てる設計を予定。
 
 ## Performance Targets
-- **Single file change → commit**: ≤120ms (NVMe, medium repo)
-- **1000-file batch operation**: ≤2s
-- **Memory cap**: Ring buffer limited (64KB or 512 lines for logs)
-- **Debounce timing**: 100-200ms for FS events
+- 単一ファイル変更→commit ≤120ms。
+- 1,000 ファイルバッチ ≤2s。
+- ログはリングバッファ (64KB or 512 行) で頭打ち。
+- FS イベントのデバウンス 100-200ms。
 
-## Testing Dependencies (Development)
-Comprehensive testing infrastructure for quality assurance:
-- **criterion** v0.7.0 - Benchmarking framework
-- **insta** v1.43.2 - Snapshot testing with JSON support
-- **mockall** v0.13.1 - Mock object generation
-- **pretty_assertions** v1.4.1 - Enhanced assertion diffs
-- **rstest** v0.26.1 - Fixture-based testing
-- **serial_test** v3.2.0 - Serial test execution
-- **tempfile** v3.23.0 - Temporary file handling
-- **test-case** v3.3.1 - Parameterized testing
-- **tokio-test** v0.4.4 - Async test utilities
-- **wiremock** v0.6.5 - HTTP mocking
-- **cargo-husky** v1.5.0 - Git hooks integration
+## Testing & QA Tooling
+- **criterion v0.7.0**: ベンチマーク (HTML レポート対応)。
+- **insta v1.43.2**: スナップショットテスト。
+- **mockall v0.13.1 / wiremock v0.6.5**: モック生成・HTTP モック。
+- **rstest / test-case / serial_test**: フィクスチャ・パラメトリックテスト補助。
+- **tempfile / pretty_assertions / tokio-test**: テストユーティリティ。
+- **cargo-husky**: Git フック連携。
 
-## Future Considerations
-- **ringbuf** v0.4: Ring buffer implementation for log management
-- **Windows-specific crates**: Job Object and long path support
-- **Container runtime alternatives**: Investigation of native container APIs
+## Pending Integration Notes
+- `bollard`, `notify`, `rmcp` は依存として確保済みだが、現行コードベースでは未配線。ロードマップに沿って順次導入する。
+- Git 周辺ロジックは `git` モジュールに集約済みで、CLI サブコマンド拡張時に再利用する想定。

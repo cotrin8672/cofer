@@ -3,200 +3,92 @@
 ## Root Directory Organization
 ```
 cofer/
-├── .kiro/                   # Kiro spec-driven development
-│   ├── steering/           # Project steering documents (this directory)
-│   └── specs/              # Feature specifications
-├── .serena/                # Serena AI assistant memories
-│   └── memories/           # Project knowledge base
-├── .claude/                # Claude Code configuration
-│   └── commands/           # Custom slash commands
-│       └── kiro/          # Kiro-specific commands
-├── .cofer/                 # Cofer runtime data (gitignored)
-│   └── worktrees/         # Git worktrees for environments
-├── src/                    # Rust source code
-│   └── main.rs            # Entry point (CLI with worktree management)
-├── target/                 # Build artifacts (gitignored)
-├── Cargo.toml             # Rust project manifest
-├── Cargo.lock             # Dependency lock file
-├── CLAUDE.md              # Claude Code instructions
-├── AGENTS.md              # Coding agent project memory
-├── about.md               # Project overview
-└── .gitignore             # Git ignore patterns
+├── .claude/                # Claude Code 用コマンド (Kiro 連携)
+│   └── commands/
+│       └── kiro/           # Kiro ワークフロー専用コマンド定義
+├── .gitignore              # リポジトリ無視設定 (.cofer/, target/ 含む)
+├── .kiro/
+│   └── steering/           # 常時読み込むプロジェクト文脈 (本ドキュメント)
+├── .rustfmt.toml           # フォーマッタ設定 (LF 強制, インポート整理)
+├── .serena/
+│   ├── memories/           # Serena エージェント向け記憶 (プロジェクト概要など)
+│   └── project.yml         # Serena 設定
+├── AGENTS.md               # コーディングエージェント向け指針
+├── about.md                # 既存 container-use の問題点と再実装方針
+├── Cargo.lock
+├── Cargo.toml              # Rust プロジェクトマニフェスト
+├── CLAUDE.md               # Claude Code 用ガイドライン
+├── clippy.toml             # Clippy 設定 (MSRV, 制約値)
+├── rust-toolchain.toml     # Rust toolchain 固定 (stable + rustfmt/clippy)
+├── src/
+│   ├── git/
+│   │   └── mod.rs          # Git ヘルパー実装
+│   └── main.rs             # CLI エントリーポイント
+└── target/                 # ビルド生成物 (gitignore)
 ```
 
-## Subdirectory Structures
+> 備考: `.cofer/` は `cofer init` 実行時に生成されるベアリポジトリ/ワークツリー領域で、`.gitignore` によりバージョン管理対象外。
 
-### Source Code (`src/`) - Current State
-```
-src/
-└── main.rs                 # CLI entry point with worktree creation
-```
+## Source Layout (`src/`)
+### 現在の実装
+- **`main.rs`**: `clap` ベースの CLI (`cofer init`) と `tokio` ランタイム初期化、`git` モジュール呼び出しを司るエントリーポイント。
+- **`git/mod.rs`**: Git 操作ヘルパーを集約。
+  - `init_remote_repository`: 既存リポジトリ配下に `.cofer` ベアリポジトリを初期化し、`cofer` リモートを追加。
+  - `fetch_from_cofer` / `create_branch`: Cofer 専用ブランチの取得・作成を Git ライブラリで完結。
+  - `create_worktree_from_cofer`: `.cofer/worktrees/<branch>` にワークツリーを生成 (存在する場合は再利用)。
+  - `ensure_gitignore_has_cofer`: `.gitignore` に `.cofer/` エントリを保証。
 
-**Current Implementation:**
-- CLI parsing with clap subcommands
-- Git worktree creation for isolated environments
-- Branch management for cofer environments
-- Async runtime setup with tokio
+### 拡張予定 (設計方針)
+- `cli/`, `container/`, `mcp/`, `fs/` などのモジュール分割を行い、CLI/サーバ/Podman/FS 監視を責務ごとに整理。
+- `utils/timeout`, `utils/logging` でタイムアウト管理やリングバッファロギングを共通化。
 
-### Planned Module Structure (`src/`) - Future
-```
-src/
-├── main.rs                 # Entry point (CLI + MCP server)
-├── cli/                    # CLI implementation
-│   ├── mod.rs             # Module exports
-│   ├── commands.rs        # Command handlers
-│   └── args.rs            # Argument parsing
-├── mcp/                    # MCP protocol implementation
-│   ├── mod.rs             # Module exports
-│   ├── server.rs          # Server implementation
-│   ├── handlers.rs        # Request handlers
-│   └── types.rs           # Protocol types
-├── container/              # Container management
-│   ├── mod.rs             # Module exports
-│   ├── podman.rs          # Podman API client
-│   └── lifecycle.rs       # Container lifecycle
-├── git/                    # Git operations
-│   ├── mod.rs             # Module exports
-│   ├── operations.rs      # Git commands
-│   └── worktree.rs        # Worktree management (partially implemented)
-├── fs/                     # File system operations
-│   ├── mod.rs             # Module exports
-│   ├── watcher.rs         # FS event monitoring
-│   └── paths.rs           # Path utilities
-└── utils/                  # Utilities
-    ├── mod.rs             # Module exports
-    ├── timeout.rs         # Timeout management
-    └── logging.rs         # Log ring buffer
-```
+## Steering & Workflow Assets
+- `.kiro/steering/`: `product.md` / `tech.md` / `structure.md` を常時読み込み。
+- `.kiro/specs/`: まだ作成されていない。新機能着手時に `/kiro:spec-init` で生成予定。
+- `.claude/commands/kiro/`: Kiro ワークフローを操作するカスタムコマンド群。
+- `.serena/memories/`: プロジェクト概要や API 設計、テストチェックリストなどをエージェント間で共有。
 
-### Kiro Specifications (`.kiro/`)
-```
-.kiro/
-├── steering/               # Always-included project context
-│   ├── product.md         # Business and product context
-│   ├── tech.md            # Technology decisions
-│   └── structure.md       # This file
-└── specs/                  # Feature specifications
-    └── [feature-name]/    # Per-feature directory
-        ├── requirements.md # Functional requirements
-        ├── design.md      # Technical design
-        └── tasks.md       # Implementation tasks
-```
+## 生成・一時ディレクトリ
+- `.cofer/`: CLI 初期化で作成するベアリポジトリおよびワークツリー格納領域 (常に gitignore 対象)。
+- `target/`: Cargo のビルド成果物。
+- `target/criterion/`: ベンチマーク結果 (必要時に生成)。
 
-### Serena Memories (`.serena/`)
-```
-.serena/
-└── memories/
-    ├── project_overview.md      # High-level project description
-    ├── tech_stack.md            # Technology choices
-    ├── api_specifications.md    # API design
-    ├── code_style_conventions.md # Coding standards
-    ├── task_completion_checklist.md # Development checklist
-    ├── suggested_commands.md    # Common commands
-    ├── mcp_technology_stack.md  # MCP-specific tech decisions
-    └── mcp_sdk_correction.md    # rmcp migration notes
-```
+## コード組織のパターン
+- モジュールごとに `mod.rs` で公開、実装はサブモジュールへ分割する方針。
+- エラーハンドリングは `anyhow::Result` を返しつつ `context` で詳細を付加。
+- トレースログは `tracing` を利用し、標準出力系マクロは `clippy.toml` で禁止。
 
-## Code Organization Patterns
+## ファイル命名規則
+- Rust ファイルはスネークケース (`worktree.rs` 等) を採用。
+- モジュールのエントリには `mod.rs` を使用。
+- ドキュメントは Markdown (`*.md`) で統一し、メタ情報ファイルは大文字先頭 (`CLAUDE.md`, `AGENTS.md`)。
 
-### Module Structure
-- **Public API at module root**: Export public interface in `mod.rs`
-- **Implementation in submodules**: Internal logic in separate files
-- **Types near usage**: Define types close to where they're used
-- **Error types per module**: Module-specific error handling
+## Import & Dependency Order
+1. 外部クレート (`anyhow`, `clap`, `git2` 等)。
+2. 標準ライブラリ (`std`)。
+3. ローカルクレート (`crate::git::*`)。
+4. 相対モジュール (`super`, `self`)。
 
-### Async Patterns
-- **tokio runtime**: All async operations use tokio
-- **Timeouts on everything**: Explicit timeouts for external operations
-- **Graceful shutdown**: Clean resource cleanup on termination
-
-### Error Handling
-- **anyhow for applications**: Simple error propagation in main code
-- **thiserror for libraries**: Custom error types for public APIs (future)
-- **Result everywhere**: Explicit error handling, no panics in production
-
-## File Naming Conventions
-
-### Rust Files
-- **Snake case**: `file_name.rs`
-- **Module index**: `mod.rs` for module roots
-- **Test modules**: `#[cfg(test)]` in same file
-- **Integration tests**: `tests/` directory (future)
-
-### Documentation
-- **Markdown**: `.md` extension
-- **Uppercase meta**: `README.md`, `CLAUDE.md`
-- **Lowercase content**: `about.md`, `requirements.md`
-
-### Configuration
-- **TOML format**: `Cargo.toml`, config files
-- **JSON for data**: MCP messages, API payloads
-- **Environment files**: `.env` for local config (gitignored)
-
-## Import Organization
-
-### Standard Order
-1. **External crates**: Third-party dependencies
-2. **Standard library**: `std::` imports (if needed)
-3. **Local modules**: Internal `crate::` imports
-4. **Super/self**: Relative imports last
-
-### Current Example (from main.rs)
+`src/main.rs` では以下の順序を採用:
 ```rust
+use crate::git::init_remote_repository;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use git2::{Repository, WorktreeAddOptions};
+use std::path::Path;
 ```
 
-### Future Module Example
-```rust
-// External crates
-use anyhow::Result;
-use tokio::time::timeout;
-use bollard::Docker;
+## Architectural Principles
+- **ゼロコピー志向**: bind-mount とライブラリベースの Git 操作で I/O/メモリ負荷を最小化。
+- **イベント駆動**: `notify` による FS イベントをトリガに、コミット処理をバッチ化 (実装中)。
+- **リソース制御**: すべての外部処理にタイムアウトを付与し、リングバッファでログを制限。
+- **AI 連携前提**: MCP サーバを通じた AI ワークフロー統合を前提にコマンド/エラーフローを設計。
 
-// Standard library
-use std::time::Duration;
-use std::path::PathBuf;
+## テスト & ベンチマーク戦略 (計画)
+- モジュール内ユニットテスト (`#[cfg(test)]`) と `rstest` によるフィクスチャベーステスト。
+- `tests/` ディレクトリでの統合テスト (CLI 動作検証) の導入を予定。
+- `criterion` でコミットパスやコンテナ起動の性能測定を自動化。
 
-// Local modules
-use crate::mcp::server::McpServer;
-use crate::container::podman::PodmanClient;
-
-// Relative imports
-use super::types::Request;
-```
-
-## Key Architectural Principles
-
-### Zero-Copy Operations
-- **Bind mounts over copying**: Direct filesystem access
-- **Streaming over buffering**: Process data as it arrives
-- **References over clones**: Minimize data duplication
-
-### Event-Driven Design
-- **FS events over polling**: React to changes immediately
-- **Async/await everywhere**: Non-blocking I/O
-- **Message passing**: Loosely coupled components
-
-### Resource Management
-- **Bounded queues**: Prevent unbounded growth
-- **Explicit timeouts**: No infinite waits
-- **Clean shutdown**: Proper resource cleanup
-
-### MCP Server Architecture
-- **stdio transport**: JSON-RPC over standard I/O
-- **Handler registry**: Dynamic method dispatch
-- **Type-safe messages**: Serde for serialization
-
-### Testing Strategy (Future)
-- **Unit tests**: In-module `#[cfg(test)]`
-- **Integration tests**: `tests/` directory
-- **Performance benchmarks**: `benches/` with criterion
-- **Mock containers**: Test without real Podman
-
-## Build Artifacts
-- `target/debug/`: Development builds
-- `target/release/`: Optimized builds
-- `target/doc/`: Generated documentation
-- **All gitignored**: Not committed to repository
+## ビルド成果物
+- `target/debug/`, `target/release/`: Cargo 標準のビルド出力。
+- `target/doc/`: `cargo doc` によるドキュメント生成物。
+- いずれも `.gitignore` 済みでリポジトリには含めない。

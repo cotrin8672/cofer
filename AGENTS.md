@@ -94,6 +94,7 @@ Kiro-style Spec Driven Development implementation using claude code slash comman
 
 #### Active Specifications
 - Check `.kiro/specs/` for active specifications
+- `mvp-environment-lifecycle`: 環境作成/実行/削除のMVP計画
 - Use `/kiro:spec-status [feature-name]` to check progress
 
 ### Development Guidelines
@@ -147,4 +148,3 @@ Managed by `/kiro:steering` command. Updates here reflect command changes.
 - **Always**: Loaded in every interaction (default)
 - **Conditional**: Loaded for specific file patterns (e.g., "*.test.js")
 - **Manual**: Reference with `@filename.md` syntax
-
